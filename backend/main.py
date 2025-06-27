@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from ping3 import ping
 import subprocess, smtplib, os
+from time import sleep
 
 app = FastAPI()
 
@@ -32,7 +33,7 @@ app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 def read_root():
     return FileResponse(os.path.join(frontend_path, "index.html"))
 
-# Speed test (placeholder - currently won't return real data)
+# Speed test placeholder (site blocks automation)
 @app.get("/speedtest")
 async def speedtest():
     results = []
@@ -41,7 +42,7 @@ async def speedtest():
         results.append(r.stdout.strip())
     return {"results": results}
 
-# Ping test using ping3 (no system-level dependencies)
+# Ping test with 600 pings per IP
 @app.post("/pingtest")
 async def pingtest(req: PingRequest):
     try:
@@ -53,12 +54,25 @@ async def pingtest(req: PingRequest):
         results = {}
         for ip in ips:
             latencies = []
-            for _ in range(10):  # Run 10 pings
+            for _ in range(600):  # 600 pings
                 latency = ping(ip, timeout=2)
-                latencies.append(latency)
-            results[ip] = latencies
+                if latency is not None:
+                    latencies.append(latency)
+                sleep(1)
+            if latencies:
+                results[ip] = {
+                    "min_ms": min(latencies) * 1000,
+                    "max_ms": max(latencies) * 1000,
+                    "avg_ms": sum(latencies) / len(latencies) * 1000,
+                    "count": len(latencies)
+                }
+            else:
+                results[ip] = {
+                    "error": "No replies received",
+                    "count": 0
+                }
 
-        return {"ping_results": results}
+        return {"summary": results}
 
     except Exception as e:
         return {"error": f"Ping test failed: {str(e)}"}
