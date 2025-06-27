@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import subprocess, asyncio, smtplib, os
+from ping3 import ping
+import subprocess, smtplib, os
 
 app = FastAPI()
 
@@ -31,7 +32,7 @@ app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 def read_root():
     return FileResponse(os.path.join(frontend_path, "index.html"))
 
-# Speed test (basic placeholder with curl)
+# Speed test (placeholder - currently won't return real data)
 @app.get("/speedtest")
 async def speedtest():
     results = []
@@ -40,7 +41,7 @@ async def speedtest():
         results.append(r.stdout.strip())
     return {"results": results}
 
-# Ping test with error handling
+# Ping test using ping3 (no system-level dependencies)
 @app.post("/pingtest")
 async def pingtest(req: PingRequest):
     try:
@@ -49,14 +50,15 @@ async def pingtest(req: PingRequest):
             "linc": ["216.20.237.3", "216.20.235.3"]
         }[req.userType]
 
-        async def ping(ip):
-            proc = await asyncio.create_subprocess_exec("ping", "-c", "10", ip, stdout=subprocess.PIPE)
-            out, _ = await proc.communicate()
-            return out.decode()
+        results = {}
+        for ip in ips:
+            latencies = []
+            for _ in range(10):  # Run 10 pings
+                latency = ping(ip, timeout=2)
+                latencies.append(latency)
+            results[ip] = latencies
 
-        tasks = [ping(ip) for ip in ips]
-        result = await asyncio.gather(*tasks)
-        return {"ping_results": dict(zip(ips, result))}
+        return {"ping_results": results}
 
     except Exception as e:
         return {"error": f"Ping test failed: {str(e)}"}
