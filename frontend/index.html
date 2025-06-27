@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Speed & Ping Test</title>
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <h1>Connection Test Tool</h1>
+    <label>Select User Type:</label><br>
+    <input type="radio" name="userType" value="interpreter" checked> Interpreter Connect<br>
+    <input type="radio" name="userType" value="linc"> Linc<br><br>
+
+    <button onclick="runSpeedTest()">Run 3 Speed Tests</button>
+    <button onclick="runPingTest()">Run Ping Test (10 min)</button><br><br>
+
+    <div id="results"></div>
+
+    <label>Email results to:</label><br>
+    <input type="email" id="email" placeholder="user@example.com">
+    <button onclick="sendResults()">Send</button>
+</body>
+</html>
