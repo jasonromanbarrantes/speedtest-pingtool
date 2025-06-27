@@ -1,4 +1,5 @@
 async function runSpeedTest() {
+    document.getElementById('results').innerText = "Running speed tests...";
     const res = await fetch('/speedtest');
     const text = await res.text();
     try {
@@ -10,12 +11,14 @@ async function runSpeedTest() {
 }
 
 async function runPingTest() {
+    document.getElementById('results').innerText = "Running ping test for 10 minutes...\nPlease keep this page open.";
     const userType = document.querySelector('input[name="userType"]:checked').value;
     const res = await fetch('/pingtest', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ userType })
     });
+
     const text = await res.text();
     try {
         const data = JSON.parse(text);
