@@ -1,18 +1,39 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import subprocess, asyncio, smtplib
+import subprocess, asyncio, smtplib, os
 
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+# CORS (for local testing or external frontend use)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change this to your frontend domain for production
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Email model
 class EmailRequest(BaseModel):
     email: str
     content: str
 
+# Ping test model
 class PingRequest(BaseModel):
     userType: str
 
+# Serve frontend folder as static files
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+
+# Serve index.html at root
+@app.get("/")
+def read_root():
+    return FileResponse(os.path.join(frontend_path, "index.html"))
+
+# Run 3 speed tests
 @app.get("/speedtest")
 async def speedtest():
     results = []
@@ -21,6 +42,7 @@ async def speedtest():
         results.append(r.stdout.strip())
     return {"results": results}
 
+# Run ping tests to 2 IPs based on user type
 @app.post("/pingtest")
 async def pingtest(req: PingRequest):
     ips = {
@@ -37,9 +59,11 @@ async def pingtest(req: PingRequest):
     result = await asyncio.gather(*tasks)
     return {"ping_results": dict(zip(ips, result))}
 
+# Send results via email
 @app.post("/send")
 async def send_email(req: EmailRequest):
-    sender = "noreply@example.com"
+    sender = os.getenv("EMAIL_USER", "noreply@example.com")
+    password = os.getenv("EMAIL_PASSWORD", "")
     to = req.email
     subject = "Test Results"
     msg = f"Subject: {subject}\n\n{req.content}"
@@ -47,7 +71,7 @@ async def send_email(req: EmailRequest):
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
-            smtp.login("your_email@gmail.com", "your_app_password")
+            smtp.login(sender, password)
             smtp.sendmail(sender, to, msg)
         return {"status": "sent"}
     except Exception as e:
