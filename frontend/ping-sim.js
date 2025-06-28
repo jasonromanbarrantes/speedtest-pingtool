@@ -5,15 +5,15 @@ async function runBrowserPingTest() {
         linc: ["216.20.237.3", "216.20.235.3"]
     }[userType];
 
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerText = "Running simulated ping test...\\n";
+    const resultsDiv = document.getElementById('results-log');
+    resultsDiv.innerText = "Running 10-minute browser-based ping test...\n\n";
 
     for (let ip of targets) {
-        resultsDiv.innerText += `\\nPinging ${ip}...\\n`;
+        resultsDiv.innerText += `Pinging ${ip}...\n`;
 
         let stats = {
             ip,
-            sent: 100,
+            sent: 600,
             received: 0,
             times: []
         };
@@ -21,7 +21,7 @@ async function runBrowserPingTest() {
         for (let i = 0; i < stats.sent; i++) {
             const start = performance.now();
             try {
-                await fetch(`http://${ip}`, {mode: "no-cors", cache: "no-store"});
+                await fetch(`http://${ip}`, { mode: "no-cors", cache: "no-store" });
                 const rtt = performance.now() - start;
                 stats.times.push(rtt);
                 stats.received++;
@@ -29,6 +29,7 @@ async function runBrowserPingTest() {
                 const rtt = performance.now() - start;
                 stats.times.push(rtt);
             }
+            await new Promise(r => setTimeout(r, 1000));  // 1-second delay
         }
 
         const loss = stats.sent - stats.received;
@@ -43,6 +44,6 @@ Results for ${ip}:
   Replies Received : ${stats.received}
   Packet Loss      : ${loss} (${lossPercent.toFixed(2)}%)
   RTT Min / Max / Avg (ms): ${min} / ${max} / ${avg}
-`;
+\n----------------------------------------\n`;
     }
 }
