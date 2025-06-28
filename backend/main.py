@@ -11,7 +11,7 @@ import uuid
 
 app = FastAPI()
 
-# CORS
+# CORS config
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,10 +27,10 @@ class EmailRequest(BaseModel):
 class PingRequest(BaseModel):
     userType: str
 
-# Ping result store
-ping_jobs = {}  # Dictionary of test_id -> result/status
+# Ping result memory store
+ping_jobs = {}
 
-# Serve static frontend
+# Serve static frontend files
 frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
@@ -38,7 +38,7 @@ app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 def read_root():
     return FileResponse(os.path.join(frontend_path, "index.html"))
 
-# Speed test placeholder
+# Speed test (placeholder — for future upgrade)
 @app.get("/speedtest")
 async def speedtest():
     results = []
@@ -47,7 +47,7 @@ async def speedtest():
         results.append(r.stdout.strip())
     return {"results": results}
 
-# Start ping test
+# Start 10-minute ping test
 @app.post("/pingtest")
 async def start_pingtest(req: PingRequest):
     test_id = str(uuid.uuid4())
@@ -63,23 +63,34 @@ async def start_pingtest(req: PingRequest):
             results = {}
             for ip in ips:
                 latencies = []
-                for _ in range(600):  # 600 pings over 10 minutes
+                total_sent = 600
+                total_received = 0
+
+                for _ in range(total_sent):
                     latency = ping(ip, timeout=2)
                     if latency is not None:
                         latencies.append(latency)
+                        total_received += 1
                     sleep(1)
+
+                total_lost = total_sent - total_received
+                loss_percent = (total_lost / total_sent) * 100
 
                 if latencies:
                     results[ip] = {
                         "min_ms": min(latencies) * 1000,
                         "max_ms": max(latencies) * 1000,
                         "avg_ms": sum(latencies) / len(latencies) * 1000,
-                        "count": len(latencies)
+                        "count": total_received,
+                        "packet_loss_count": total_lost,
+                        "packet_loss_percent": round(loss_percent, 2)
                     }
                 else:
                     results[ip] = {
                         "error": "No replies",
-                        "count": 0
+                        "count": 0,
+                        "packet_loss_count": total_sent,
+                        "packet_loss_percent": 100.0
                     }
 
             ping_jobs[test_id] = {
@@ -93,12 +104,12 @@ async def start_pingtest(req: PingRequest):
     Thread(target=run_test).start()
     return {"test_id": test_id}
 
-# Poll ping result
+# Poll for ping result
 @app.get("/ping-status/{test_id}")
 async def check_ping_status(test_id: str):
     return ping_jobs.get(test_id, {"status": "not_found"})
 
-# Send email
+# Email results
 @app.post("/send")
 async def send_email(req: EmailRequest):
     sender = os.getenv("EMAIL_USER", "noreply@example.com")
