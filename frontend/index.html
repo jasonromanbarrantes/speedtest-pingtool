@@ -1,32 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Speed & Ping Test</title>
-    <script defer src="/static/script.js"></script>
+  <meta charset="UTF-8">
+  <title>Network Diagnostic Tool</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="/static/script.js"></script>
+  <script defer src="/static/ping-sim.js"></script>
 </head>
 <body>
-    <h1>Connection Test Tool</h1>
-    
-<h2>Run Official Speed Test</h2>
-<a href="https://speedtest.llsapi.com" target="_blank">
-  <button style="padding: 8px 16px; font-size: 16px; margin-bottom: 20px;">
-    Start Speed Test in New Tab
-  </button>
-</a>
-<p><small>The test will open in a new tab. Click “Start” to begin once it loads.</small></p>
-    
-    <label>Select User Type:</label><br>
-    <input type="radio" name="userType" value="interpreter" checked> Interpreter Connect<br>
-    <input type="radio" name="userType" value="linc"> Linc<br><br>
+  <div class="container">
+    <h1>📡 Network Diagnostic Tool</h1>
+    <p>This tool tests your internet connection to LanguageLine's infrastructure.</p>
 
-    <button onclick="runSpeedTest()">Run 3 Speed Tests</button>
-    <button onclick="runPingTest()">Run Ping Test (10 min)</button><br><br>
+    <div class="card">
+      <h2>🔍 Select Connection Type</h2>
+      <label><input type="radio" name="userType" value="interpreter" checked> Interpreter Connect</label><br>
+      <label><input type="radio" name="userType" value="linc"> Linc</label>
+    </div>
 
-    <div id="results"></div>
+    <div class="card actions">
+      <button onclick="runSpeedTest()">🚀 Run 3x Speed Tests</button>
+      <button onclick="runBrowserPingTest()">📶 Run Browser Ping Test</button>
+    </div>
 
-    <label>Email results to:</label><br>
-    <input type="email" id="email" placeholder="user@example.com">
-    <button onclick="sendResults()">Send</button>
+    <div class="card email">
+      <h2>📤 Send Results via Email</h2>
+      <input type="email" id="email" placeholder="Enter your email" />
+      <button onclick="sendResults()">Send</button>
+    </div>
+
+    <div class="card results" id="results">
+      <h2>📝 Test Results</h2>
+      <pre id="results-log">No results yet.</pre>
+    </div>
+  </div>
 </body>
 </html>
